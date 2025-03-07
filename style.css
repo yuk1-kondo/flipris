@@ -1,3 +1,12 @@
+/* ページ全体のスクロールを防止 */
+html, body {
+    overflow: hidden;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* 基本設定 */
 * {
     margin: 0;
     padding: 0;
@@ -10,17 +19,18 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
 }
 
 .container {
     width: 100%;
     max-width: 800px;
+    height: 100vh; /* コンテナをビューポート全体に固定 */
     margin: 0 auto;
     padding: 20px;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;  /* 内部スクロールを抑制 */
 }
 
 .game-header {
@@ -33,20 +43,21 @@ body {
     font-size: 2.5em;
 }
 
+/* ゲームエリア：左側にゲームステータス、右側にゲームボードを配置 */
 .game-area {
     display: flex;
-    flex-direction: row; /* 常に横並び：左側にゲームステータス、右側にゲームボード */
+    flex-direction: row;
     justify-content: center;
     align-items: flex-start;
     gap: 20px;
+    height: calc(100% - 140px); /* ヘッダーとコントロール分を差し引く */
 }
 
 .game-board {
     border: 2px solid #333;
     background-color: #000;
-    /* 固定サイズ（PC・スマホ同じサイズ） */
-    width: 320px;
-    height: 640px;
+    width: 300px;
+    height: 600px;
 }
 
 .game-stats {
@@ -97,7 +108,7 @@ body {
 }
 
 .mobile-controls {
-    display: flex;
+    display: none;
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
@@ -160,20 +171,21 @@ body {
     margin-bottom: 10px;
 }
 
-/* レスポンシブ対応 - 基本レイアウトは横並び（row）のまま固定サイズを維持 */
+/* レスポンシブ対応 */
 @media screen and (max-width: 768px) {
     .container {
         padding: 10px;
     }
     
     .game-area {
-        flex-direction: row;
-        justify-content: center;
+        flex-direction: column-reverse;
+        align-items: center;
     }
     
     .game-stats {
-        flex-direction: column;
-        align-items: center;
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-around;
     }
     
     .mobile-controls {
@@ -183,11 +195,34 @@ body {
     .pc-controls {
         display: none;
     }
+    
+    #board {
+        width: 300px;
+        height: 600px;
+    }
+    
+    .next-piece, .hold-piece {
+        padding: 5px;
+    }
+    
+    #nextCanvas, #holdCanvas {
+        width: 80px;
+        height: 80px;
+    }
 }
 
 @media screen and (max-width: 480px) {
     .game-header h1 {
         font-size: 2em;
+    }
+    
+    .game-stats {
+        flex-direction: column;
+    }
+    
+    #board {
+        width: 250px;
+        height: 500px;
     }
     
     .control-btn {
