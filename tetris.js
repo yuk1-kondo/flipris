@@ -710,83 +710,122 @@ window.addEventListener('load', () => {
 });
 
 // ----------------------------------------------------------
-// 指でドラッグして左右移動、タップで回転、上下スワイプでドロップ/ホールド
+// タッチ操作の改善: ドラッグして左右移動、タップで回転、上下スワイプでドロップ/ホールド
 // ----------------------------------------------------------
 const gameArea = document.querySelector('.game-area'); 
 // ドラッグ操作時の判定用変数
 let dragging = false;
 let startX = 0;
 let startY = 0;
-let currentX = 0;
-let currentY = 0;
 let lastMoveTime = 0;
+let lastMoveDirection = 0;
+let tapTimeout = null;
+let doubleTapPrevented = false;
 
-const dragThreshold = 10;     // タップと判定する移動許容距離(px)
+const dragThreshold = 20;     // タップと判定する移動許容距離(px)
 const swipeThreshold = 50;    // 上下スワイプと判定する移動距離(px)
-const moveDelay = 100;        // 左右連続移動のディレイ(ms)
+const moveDelay = 150;        // 左右連続移動のディレイ(ms)
+const doubleTapDelay = 300;   // ダブルタップとみなす時間(ms)
 
-// pointerdown（またはtouchstart）
-gameArea.addEventListener('pointerdown', (e) => {
+// ブラウザのズーム防止
+document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// ダブルタップによるズーム防止
+document.addEventListener('touchend', function(e) {
+    if (!doubleTapPrevented) {
+        doubleTapPrevented = true;
+        setTimeout(function() {
+            doubleTapPrevented = false;
+        }, doubleTapDelay);
+    } else {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// ゲームエリア全体に対するタッチイベントリスナー
+gameArea.addEventListener('touchstart', handleTouchStart, { passive: false });
+gameArea.addEventListener('touchmove', handleTouchMove, { passive: false });
+gameArea.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+// タッチ開始時の処理
+function handleTouchStart(e) {
     e.preventDefault();
     if (!gameStarted || gameOver || gamePaused) return;
 
     dragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    currentX = startX;
-    currentY = startY;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
     lastMoveTime = performance.now();
-}, { passive: false });
+    lastMoveDirection = 0;
+    
+    // ダブルタップを防止するためタップタイムアウトをクリア
+    clearTimeout(tapTimeout);
+}
 
-// pointermove（またはtouchmove）
-gameArea.addEventListener('pointermove', (e) => {
+// タッチ移動時の処理
+function handleTouchMove(e) {
     if (!dragging) return;
     e.preventDefault();
     if (!gameStarted || gameOver || gamePaused) return;
 
     const now = performance.now();
-    currentX = e.clientX;
-    currentY = e.clientY;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
 
     const deltaX = currentX - startX;
     const deltaY = currentY - startY;
 
-    // ドラッグ中に左右移動をリアルタイムで行う
-    // moveDelayを設け、移動を連続で呼びすぎないようにする
-    if (Math.abs(deltaX) > dragThreshold && (now - lastMoveTime) > moveDelay) {
-        if (deltaX > 0) {
-            // 右へ1マス
-            move(1);
+    // 横方向の移動が縦より大きい場合のみ左右移動を処理
+    if (Math.abs(deltaX) > dragThreshold && Math.abs(deltaX) > Math.abs(deltaY) && (now - lastMoveTime) > moveDelay) {
+        const moveDirection = deltaX > 0 ? 1 : -1;
+        
+        // 同じ方向に移動していない場合はすぐに移動
+        if (moveDirection !== lastMoveDirection) {
+            move(moveDirection);
+            lastMoveDirection = moveDirection;
+            lastMoveTime = now;
         } else {
-            // 左へ1マス
-            move(-1);
+            // 同じ方向への連続移動の場合
+            move(moveDirection);
+            lastMoveTime = now;
         }
-        lastMoveTime = now;
-
-        // ドラッグの起点を更新
+        
+        // ドラッグの起点を更新（大きく移動させる）
         startX = currentX;
-        startY = currentY;
     }
-}, { passive: false });
+}
 
-// pointerup（またはtouchend）
-gameArea.addEventListener('pointerup', (e) => {
+// タッチ終了時の処理
+function handleTouchEnd(e) {
     e.preventDefault();
-    if (!dragging) return;
-    dragging = false;
-
+    if (!dragging || !gameStarted || gameOver || gamePaused) {
+        dragging = false;
+        return;
+    }
+    
+    // 最後のタッチポイントを取得
+    const currentX = e.changedTouches[0].clientX;
+    const currentY = e.changedTouches[0].clientY;
+    
     const deltaX = currentX - startX;
     const deltaY = currentY - startY;
 
-    // 移動距離が少ない＝タップとみなす
+    // 移動距離が少ない場合はタップとみなす
     if (Math.abs(deltaX) < dragThreshold && Math.abs(deltaY) < dragThreshold) {
         // タップ → 回転
         rotate();
-        return;
-    }
-
-    // 縦方向の移動量が大きい場合 → スワイプ判定
-    if (Math.abs(deltaY) > swipeThreshold) {
+        
+        // ダブルタップ防止（次のタップまで短時間無視）
+        tapTimeout = setTimeout(() => {
+            tapTimeout = null;
+        }, 100);
+    } 
+    // 垂直方向の移動が大きい場合はスワイプ判定
+    else if (Math.abs(deltaY) > swipeThreshold && Math.abs(deltaY) > Math.abs(deltaX)) {
         if (deltaY > 0) {
             // 下スワイプ → ハードドロップ
             hardDrop();
@@ -795,4 +834,33 @@ gameArea.addEventListener('pointerup', (e) => {
             holdTetromino();
         }
     }
-}, { passive: false });
+    
+    dragging = false;
+}
+
+// リサイズ時にviewportをリセット（ズーム対策）
+function resetViewport() {
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (viewportMeta) {
+        viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    } else {
+        const meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+    }
+}
+
+// ウィンドウサイズ変更時にviewportをリセット
+window.addEventListener('resize', resetViewport);
+
+// 初期化時にviewportを設定
+window.addEventListener('load', () => {
+    resetViewport();
+    // 既存の初期化コードは残す
+    setupMobileControls();
+    showStartScreen();
+    drawBoard();
+    drawNextPiece();
+    drawHoldPiece();
+});
