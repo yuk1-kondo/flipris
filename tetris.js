@@ -722,3 +722,52 @@ window.addEventListener('load', () => {
     drawNextPiece();
     drawHoldPiece();
 });
+
+
+// --- Touch event handlers for flick control ---
+// tetris.js の最後にフリック操作用のコードを追加
+
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+const swipeThreshold = 30; // Minimum swipe distance in pixels
+
+// タッチ開始イベント
+document.addEventListener('touchstart', (e) => {
+    const touch = e.changedTouches[0];
+    touchStartX = touch.screenX;
+    touchStartY = touch.screenY;
+}, false);
+
+// タッチ終了イベント
+document.addEventListener('touchend', (e) => {
+    const touch = e.changedTouches[0];
+    touchEndX = touch.screenX;
+    touchEndY = touch.screenY;
+    handleSwipe();
+}, false);
+
+function handleSwipe() {
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    
+    // 横方向のスワイプが優先
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (Math.abs(deltaX) > swipeThreshold) {
+            if (deltaX > 0) {
+                move(1);
+            } else {
+                move(-1);
+            }
+        }
+    } else {
+        if (Math.abs(deltaY) > swipeThreshold) {
+            if (deltaY > 0) {
+                drop();
+            } else {
+                rotate();
+            }
+        }
+    }
+}
