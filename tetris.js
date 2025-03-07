@@ -285,21 +285,7 @@ function clearLines() {
         
         // UI更新
         updateStats();
-        // もし1ラインだけ消去されたら、左右反転モードを発動
-        if (linesCleared === 1) {
-            flipBoard();
-        }
     }
-}
-
-// 盤面とプレイヤーの左右反転を行う関数
-function flipBoard() {
-    // 各行を左右反転
-    for (let y = 0; y < ROWS; y++) {
-        grid[y].reverse();
-    }
-    // 現在のテトリミノの位置を左右反転
-    player.pos.x = COLS - player.matrix[0].length - player.pos.x;
 }
 
 // ホールド機能
@@ -537,7 +523,7 @@ function update(time = 0) {
     requestAnimationFrame(update);
 }
 
-// キーボード入力の処理
+// キーボード入力の処理（PC向け）
 document.addEventListener('keydown', event => {
     if (!gameStarted || gameOver || gamePaused) return;
     
@@ -581,7 +567,7 @@ function togglePause() {
     }
 }
 
-// モバイルコントロールの設定
+// モバイルコントロールの設定（仮想ボタン）
 function setupMobileControls() {
     // 左移動
     leftBtn.addEventListener('touchstart', event => {
@@ -723,51 +709,90 @@ window.addEventListener('load', () => {
     drawHoldPiece();
 });
 
+// ----------------------------------------------------------
+// 指でドラッグして左右移動、タップで回転、上下スワイプでドロップ/ホールド
+// ----------------------------------------------------------
+const gameArea = document.querySelector('.game-area'); 
+// ドラッグ操作時の判定用変数
+let dragging = false;
+let startX = 0;
+let startY = 0;
+let currentX = 0;
+let currentY = 0;
+let lastMoveTime = 0;
 
-// --- Touch event handlers for flick control ---
-// tetris.js の最後にフリック操作用のコードを追加
+const dragThreshold = 10;     // タップと判定する移動許容距離(px)
+const swipeThreshold = 50;    // 上下スワイプと判定する移動距離(px)
+const moveDelay = 100;        // 左右連続移動のディレイ(ms)
 
-let touchStartX = 0;
-let touchStartY = 0;
-let touchEndX = 0;
-let touchEndY = 0;
-const swipeThreshold = 30; // Minimum swipe distance in pixels
+// pointerdown（またはtouchstart）
+gameArea.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (!gameStarted || gameOver || gamePaused) return;
 
-// タッチ開始イベント
-document.addEventListener('touchstart', (e) => {
-    const touch = e.changedTouches[0];
-    touchStartX = touch.screenX;
-    touchStartY = touch.screenY;
-}, false);
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    currentX = startX;
+    currentY = startY;
+    lastMoveTime = performance.now();
+}, { passive: false });
 
-// タッチ終了イベント
-document.addEventListener('touchend', (e) => {
-    const touch = e.changedTouches[0];
-    touchEndX = touch.screenX;
-    touchEndY = touch.screenY;
-    handleSwipe();
-}, false);
+// pointermove（またはtouchmove）
+gameArea.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    if (!gameStarted || gameOver || gamePaused) return;
 
-function handleSwipe() {
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
-    
-    // 横方向のスワイプが優先
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        if (Math.abs(deltaX) > swipeThreshold) {
-            if (deltaX > 0) {
-                move(1);
-            } else {
-                move(-1);
-            }
+    const now = performance.now();
+    currentX = e.clientX;
+    currentY = e.clientY;
+
+    const deltaX = currentX - startX;
+    const deltaY = currentY - startY;
+
+    // ドラッグ中に左右移動をリアルタイムで行う
+    // moveDelayを設け、移動を連続で呼びすぎないようにする
+    if (Math.abs(deltaX) > dragThreshold && (now - lastMoveTime) > moveDelay) {
+        if (deltaX > 0) {
+            // 右へ1マス
+            move(1);
+        } else {
+            // 左へ1マス
+            move(-1);
         }
-    } else {
-        if (Math.abs(deltaY) > swipeThreshold) {
-            if (deltaY > 0) {
-                drop();
-            } else {
-                rotate();
-            }
+        lastMoveTime = now;
+
+        // ドラッグの起点を更新
+        startX = currentX;
+        startY = currentY;
+    }
+}, { passive: false });
+
+// pointerup（またはtouchend）
+gameArea.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    if (!dragging) return;
+    dragging = false;
+
+    const deltaX = currentX - startX;
+    const deltaY = currentY - startY;
+
+    // 移動距離が少ない＝タップとみなす
+    if (Math.abs(deltaX) < dragThreshold && Math.abs(deltaY) < dragThreshold) {
+        // タップ → 回転
+        rotate();
+        return;
+    }
+
+    // 縦方向の移動量が大きい場合 → スワイプ判定
+    if (Math.abs(deltaY) > swipeThreshold) {
+        if (deltaY > 0) {
+            // 下スワイプ → ハードドロップ
+            hardDrop();
+        } else {
+            // 上スワイプ → ホールド
+            holdTetromino();
         }
     }
-}
+}, { passive: false });
