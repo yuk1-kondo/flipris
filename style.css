@@ -35,21 +35,26 @@ body {
 
 .game-area {
     display: flex;
+    flex-direction: row; /* 常に横並び：左側にゲームステータス、右側にゲームボード */
     justify-content: center;
-    flex-wrap: wrap;
+    align-items: flex-start;
     gap: 20px;
 }
 
 .game-board {
     border: 2px solid #333;
     background-color: #000;
+    /* 固定サイズ（PC・スマホ同じサイズ） */
+    width: 320px;
+    height: 640px;
 }
 
 .game-stats {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 20px;
+    min-width: 120px;
 }
 
 .next-piece, .hold-piece {
@@ -92,7 +97,7 @@ body {
 }
 
 .mobile-controls {
-    display: none;
+    display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
@@ -155,21 +160,20 @@ body {
     margin-bottom: 10px;
 }
 
-/* レスポンシブ対応 */
+/* レスポンシブ対応 - 基本レイアウトは横並び（row）のまま固定サイズを維持 */
 @media screen and (max-width: 768px) {
     .container {
         padding: 10px;
     }
     
     .game-area {
-        flex-direction: column-reverse;
-        align-items: center;
+        flex-direction: row;
+        justify-content: center;
     }
     
     .game-stats {
-        flex-direction: row;
-        width: 100%;
-        justify-content: space-around;
+        flex-direction: column;
+        align-items: center;
     }
     
     .mobile-controls {
@@ -179,34 +183,11 @@ body {
     .pc-controls {
         display: none;
     }
-    
-    #board {
-        width: 300px;
-        height: 600px;
-    }
-    
-    .next-piece, .hold-piece {
-        padding: 5px;
-    }
-    
-    #nextCanvas, #holdCanvas {
-        width: 80px;
-        height: 80px;
-    }
 }
 
 @media screen and (max-width: 480px) {
     .game-header h1 {
         font-size: 2em;
-    }
-    
-    .game-stats {
-        flex-direction: column;
-    }
-    
-    #board {
-        width: 250px;
-        height: 500px;
     }
     
     .control-btn {
