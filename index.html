@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テトリス | GitHub Pages</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <h1>テトリス</h1>
+        </div>
+        
+        <div class="game-area">
+            <div class="game-stats">
+                <div class="next-piece">
+                    <h3>NEXT</h3>
+                    <canvas id="nextCanvas" width="120" height="120"></canvas>
+                </div>
+                <div class="hold-piece">
+                    <h3>HOLD</h3>
+                    <canvas id="holdCanvas" width="120" height="120"></canvas>
+                </div>
+                <div class="score-info">
+                    <div class="score-item">
+                        <h3>SCORE</h3>
+                        <p id="score">0</p>
+                    </div>
+                    <div class="score-item">
+                        <h3>LEVEL</h3>
+                        <p id="level">1</p>
+                    </div>
+                    <div class="score-item">
+                        <h3>LINES</h3>
+                        <p id="lines">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="game-board">
+                <canvas id="board" width="300" height="600"></canvas>
+            </div>
+        </div>
+        
+        <div class="game-controls">
+            <div class="controls-info">
+                <h3>操作方法</h3>
+                <div class="pc-controls">
+                    <p>PC: ← → (移動), ↑ (回転), ↓ (加速), Space (ハードドロップ), Shift (ホールド)</p>
+                </div>
+            </div>
+            <div class="mobile-controls">
+                <button id="left-btn" class="control-btn">←</button>
+                <button id="rotate-btn" class="control-btn">↑</button>
+                <button id="right-btn" class="control-btn">→</button>
+                <button id="down-btn" class="control-btn">↓</button>
+                <button id="drop-btn" class="control-btn">Drop</button>
+                <button id="hold-btn" class="control-btn">Hold</button>
+            </div>
+        </div>
+        
+        <div class="game-overlay" id="start-screen">
+            <div class="overlay-content">
+                <h2>テトリス</h2>
+                <p>画面をクリックしてゲームを開始</p>
+            </div>
+        </div>
+        
+        <div class="game-overlay" id="pause-screen" style="display: none;">
+            <div class="overlay-content">
+                <h2>一時停止</h2>
+                <p>クリックして再開</p>
+            </div>
+        </div>
+        
+        <div class="game-overlay" id="gameover-screen" style="display: none;">
+            <div class="overlay-content">
+                <h2>ゲームオーバー</h2>
+                <p>スコア: <span id="final-score">0</span></p>
+                <p>クリックして再開</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="tetris.js"></script>
+</body>
+</html>
